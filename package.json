@@ -1,0 +1,29 @@
+{
+  "name": "seneca-rancher-balance",
+  "version": "0.0.1",
+  "description": "seneca plugin extension for seneca-balance-client to add/remove clients in rancher environments",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/paeffgen/seneca-rancher-balance.git"
+  },
+  "keywords": [
+    "seneca",
+    "rancher",
+    "balance",
+    "transport"
+  ],
+  "author": "Ronny Dudeck",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/paeffgen/seneca-rancher-balance/issues"
+  },
+  "homepage": "https://github.com/paeffgen/seneca-rancher-balance#readme",
+  "peerDependencies": {
+    "seneca": "*",
+    "seneca-balance-client": "*"
+  }
+}
