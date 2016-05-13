@@ -4,7 +4,7 @@
   "description": "seneca plugin extension for seneca-balance-client to add/remove clients in rancher environments",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "lab -v -P test -t 85 -m 10000"
   },
   "repository": {
     "type": "git",
@@ -25,5 +25,13 @@
   "peerDependencies": {
     "seneca": "*",
     "seneca-balance-client": "*"
+  },
+  "dependencies": {
+    "request": "^2.72.0",
+    "winston": "^2.2.0"
+  },
+  "devDependencies": {
+    "lab": "^10.5.1",
+    "temp": "^0.8.3"
   }
 }
