@@ -4,8 +4,16 @@ var winston = require('winston');
 
 module.exports = function (options)
 {
+	if (options.opts === undefined) options = [options];
+	else options = options.opts;
+
 	var plugin = "seneca-rancher-balance";
-	var currentNodes = [];
+
+	for (var _i = 0, obj_1 = options; _i < obj_1.length; _i++)
+	{
+		var i = obj_1[_i];
+		i.currentNodes = [];
+	}
 
 	function getMetaData(cb, options)
 	{
@@ -74,6 +82,7 @@ module.exports = function (options)
 
 	this.add({plugin: plugin, cmd: 'alive'}, function (args, done)
 	{
+		var options = args.options;
 		getMetaData(function (obj)
 		{
 			if (obj)
@@ -96,6 +105,7 @@ module.exports = function (options)
 
 	this.add({plugin: plugin, cmd: 'add'}, function (args, done)
 	{
+		var options = args.options;
 		var $this = this;
 		var result = [];
 		var doOne = function (client, allClients)
@@ -119,6 +129,7 @@ module.exports = function (options)
 
 	this.add({plugin: plugin, cmd: 'remove'}, function (args, done)
 	{
+		var options = args.options;
 		var $this = this;
 		var result = [];
 		var doOne = function (client, allClients)
@@ -142,51 +153,63 @@ module.exports = function (options)
 
 	this.add({plugin: plugin, cmd: 'ha-check'}, function (args, done)
 	{
-		this.act({plugin: plugin, cmd: 'alive'}, function (err, nodes)
+		var s = this;
+
+		function next(options, all)
 		{
-			var added = removeArrayItems(currentNodes, nodes);
-			var removed = removeArrayItems(nodes, currentNodes);
-			if (removed.length != 0 || added.length != null)
+			s.act({plugin: plugin, cmd: 'alive', options: options}, function (err, nodes)
 			{
-				if (added.length > 0)
-					this.act({plugin: plugin, cmd: 'add', hosts: added}, function (err, result)
-					{
-						for (var _i = 0, obj_1 = result; _i < obj_1.length; _i++)
+				var added = removeArrayItems(options.currentNodes, nodes);
+				var removed = removeArrayItems(nodes, options.currentNodes);
+				if (removed.length != 0 || added.length != 0)
+				{
+					if (added.length > 0)
+						s.act({plugin: plugin, cmd: 'add', hosts: added, options: options}, function (err, result)
 						{
-							var i = obj_1[_i];
-							winston.log("debug", "added new host: ", i);
-						}
-					});
-				if (removed.length > 0)
-					this.act({plugin: plugin, cmd: 'remove', hosts: removed}, function (err, result)
-					{
-						for (var _i = 0, obj_1 = result; _i < obj_1.length; _i++)
+							for (var _i = 0, obj_1 = result; _i < obj_1.length; _i++)
+							{
+								var i = obj_1[_i];
+								winston.log("debug", "added new host: ", i);
+							}
+						});
+					if (removed.length > 0)
+						s.act({plugin: plugin, cmd: 'remove', hosts: removed, options: options}, function (err, result)
 						{
-							var i = obj_1[_i];
-							winston.log("debug", "removed host: ", i);
-						}
-					});
-				currentNodes = nodes;
-			}
-			done();
-		});
+							for (var _i = 0, obj_1 = result; _i < obj_1.length; _i++)
+							{
+								var i = obj_1[_i];
+								winston.log("debug", "removed host: ", i);
+							}
+						});
+					options.currentNodes = nodes;
+				}
+				if (all.length > 0) next(all.pop(), all);
+				else done();
+			});
+		}
+
+		var nextOptions = [];
+		for (var _i = 0, obj_1 = options; _i < obj_1.length; _i++)
+		{
+			var i = obj_1[_i];
+			nextOptions.push(i);
+		}
+		if (options.length > 0) next(nextOptions.pop(), nextOptions);
+		else done();
 	});
 
 	this.add({init: plugin}, function (args, done)
 	{
 		winston.log("debug", 'init plugin');
 		var $this = this;
-		this.act({plugin: plugin, cmd: 'alive'}, function (err, nodes)
+		setInterval(function ()
 		{
-			setInterval(function ()
+			$this.act({plugin: plugin, cmd: 'ha-check'}, function (err, result)
 			{
-				$this.act({plugin: plugin, cmd: 'ha-check'}, function (err, result)
-				{
-					if (err) winston.error(err);
-				});
-			}, 1000);
-			done();
-		});
+				if (err) winston.error(err);
+			});
+		}, 1000);
+		done();
 	});
 	return plugin;
 };
